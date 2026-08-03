@@ -21,11 +21,9 @@ The application reads telemetry data from a text file, validates sensor values, 
 edgenode-telemetry-reporter/
 │
 ├── edgenode-telemetry-reporter.py   # Main application (configuration, parser, queue, MQTT, logging, shutdown)
-├── reporter.conf                    # Configuration values
 ├── telemetry_input.txt              # Sample telemetry input file
 ├── requirements.txt                 # Python dependencies
 ├── README.md                        # Documentation
-├── .gitignore                       # Ignored generated files
 └── buffer.txt                       # Temporary persistent message queue storage
 ```
 
