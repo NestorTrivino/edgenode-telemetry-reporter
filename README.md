@@ -2,46 +2,45 @@
 
 Prototype implementation of an embedded Linux telemetry reporter written in Python.
 
+The application reads telemetry data from a text file, validates sensor values, buffers messages locally during network outages, and publishes telemetry data through MQTT.
+
 ## Features
 
 - Reads telemetry data from a text file
-- Validates sensor data
-- Local persistent queue buffer
+- Validates sensor data format and required fields
+- Local persistent message queue
 - MQTT publishing
-- Automatic MQTT reconnect
+- Automatic MQTT reconnect handling
 - Graceful shutdown handling
-- Logging
-- Cython parser (planned)
-
----
+- Logging support
+- Cython parser support (planned)
 
 ## Project Structure
 
 ```
 edgenode-telemetry-reporter/
-├── main.py                    # Entire application (configuration, parser, queue, MQTT, logging, shutdown)
-├── reporter.conf              # Configuration values
-├── telemetry_input.txt        # Sample telemetry input file
-├── requirements.txt           # Python dependencies
-├── README.md                  # Build and usage instructions
-├── .gitignore                 # Ignore generated files
-└── buffer.txt                 # Temporary persistent queue storage
+│
+├── edgenode-telemetry-reporter.py   # Main application (configuration, parser, queue, MQTT, logging, shutdown)
+├── reporter.conf                    # Configuration values
+├── telemetry_input.txt              # Sample telemetry input file
+├── requirements.txt                 # Python dependencies
+├── README.md                        # Documentation
+├── .gitignore                       # Ignored generated files
+└── buffer.txt                       # Temporary persistent message queue storage
 ```
-
----
 
 ## Requirements
 
 - Python 3.11+
 - Mosquitto MQTT Broker
 
-### Create Python virtual environment
+### Create Python Virtual Environment
 
 ```bash
 python3 -m venv venv
 ```
 
-### Activate virtual environment
+### Activate Virtual Environment
 
 Linux:
 
@@ -49,15 +48,19 @@ Linux:
 source venv/bin/activate
 ```
 
-### Install dependencies
+Windows:
+
+```bash
+venv\Scripts\activate
+```
+
+### Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
----
-
-# Running the Application
+## Running the Application
 
 Make the script executable:
 
@@ -85,9 +88,13 @@ mosquitto_sub -h localhost -t "company/edgenode/#" -v
 
 # Input Example
 
-The telemetry input source is the `telemetry_input.txt` file.
+The telemetry input file is:
 
-A valid telemetry message should have the following format:
+```
+telemetry_input.txt
+```
+
+A valid telemetry message should follow this format:
 
 ```
 TEMP=23.6,HUM=61.1,VOLT=12.3
@@ -95,7 +102,7 @@ TEMP=23.6,HUM=61.1,VOLT=12.3
 
 ## Invalid Input Examples
 
-### Invalid numeric value
+### Invalid Numeric Format
 
 Input:
 
@@ -111,7 +118,7 @@ Invalid numeric value for TEMP: 'bad'
 
 ---
 
-### Missing required field
+### Missing Required Field
 
 Input:
 
@@ -127,7 +134,7 @@ Missing field: HUM
 
 ---
 
-### Unknown fields
+### Unknown Extra Fields
 
 Input:
 
@@ -146,21 +153,19 @@ WARNING: Unknown field 'VOX' ignored in line: TEMP=23.7,VOLT=12.1,TEST=XX,VOX=12
 
 # Output Examples
 
-## Positive Scenario
+## Successful Telemetry Publishing
 
-The application generates two outputs:
+The application produces two outputs:
 
-1. MQTT broker messages
+1. MQTT broker telemetry messages
 2. Application console logs
-
----
 
 ## MQTT Broker Output
 
 Example:
 
 ```bash
-mosquitto_sub -h localhost -t "company/edgenode/#" -v
+lostransper@Terminestor:/mnt/c/Users/lostr$ mosquitto_sub -h localhost -t "company/edgenode/#" -v
 ```
 
 Output:
@@ -186,6 +191,8 @@ company/edgenode/edgenode-test-001/telemetry {
 Example:
 
 ```text
+(venv) lostransper@Terminestor:~/Interview/edgenode-telemetry-reporter$ ./edgenode-telemetry-reporter.py
+
 {
     "deviceId": "edgenode-test-001",
     "timestamp": "2026-08-03T22:35:42.592572+00:00",
@@ -217,11 +224,11 @@ Shutdown complete.
 
 ---
 
-# Negative Scenarios
+# Negative Test Scenarios
 
 ## Invalid Numeric Values
 
-Example:
+Input:
 
 ```
 TEMP=bad,HUM=60.9,VOLT=12.2
@@ -237,7 +244,7 @@ Invalid numeric value for TEMP: 'bad'
 
 ## Missing Fields
 
-Example:
+Input:
 
 ```
 TEMP=23.7,VOLT=12.1
@@ -253,7 +260,7 @@ Missing field: HUM
 
 ## Extra Unknown Fields
 
-Example:
+Input:
 
 ```
 TEMP=23.7,VOLT=12.1,TEST=XX,VOX=12.X
@@ -274,9 +281,9 @@ Empty lines are ignored.
 
 ---
 
-## Incorrect Format
+## Incorrect Format Lines
 
-Example:
+Input:
 
 ```
 incorrectformatline
@@ -286,26 +293,26 @@ Output:
 
 ```
 ERROR: incorrectformatline
-Malformed input line
+Malformed telemetry line
 ```
 
 ---
 
-# Testing Network Outage Behavior
+# Network Outage Test
 
-The application can be tested during MQTT broker outages.
+This test validates the local buffering mechanism when MQTT connectivity is unavailable.
 
-If Mosquitto is running on the same machine, stop the service:
+## Stop MQTT Broker
+
+If Mosquitto is running on the same machine:
 
 ```bash
 sudo systemctl stop mosquitto
 ```
 
-> Note: You need enough time to enter your password before the application continues sending messages.
+> Note: The password prompt may require time before the MQTT connection is completely stopped.
 
-Alternatively, disconnect the network cable if the MQTT broker is running on another machine.
-
----
+Alternatively, disconnect the network connection if the MQTT broker is running on another machine.
 
 ## Test Procedure
 
@@ -315,7 +322,7 @@ Alternatively, disconnect the network cable if the MQTT broker is running on ano
 telemetry_input.txt
 ```
 
-2. Start the application:
+2. Start the reporter:
 
 ```bash
 ./edgenode-telemetry-reporter.py
@@ -323,31 +330,34 @@ telemetry_input.txt
 
 3. Stop the MQTT broker.
 
-After the buffer reaches its maximum size, the application should display:
+After several seconds, the application should detect the connection failure and start buffering messages.
 
-```
+Example:
+
+```text
 WARNING: Buffer full (10 messages). Dropping message 1168.
 
 Waiting for connection to flush 10 buffered message(s)... (Ctrl+C to exit)
 ```
 
-The application will continue waiting until the MQTT connection is restored.
+The application will:
 
-Incoming telemetry messages are ignored while the connection is unavailable if the buffer is already full.
+- Continue running while MQTT is unavailable
+- Store messages locally in the buffer
+- Drop new messages when the buffer reaches the maximum size
+- Resume publishing after MQTT connectivity is restored
 
----
+## Restore MQTT Connection
 
-## MQTT Recovery Example
-
-After restarting Mosquitto:
+Start Mosquitto again:
 
 ```bash
 sudo systemctl start mosquitto
 ```
 
-The application reconnects and flushes buffered messages:
+After reconnection, the application should flush buffered messages:
 
-```
+```text
 Connected to MQTT Broker
 
 Flushing 10 buffered message(s)...
@@ -374,18 +384,27 @@ Shutdown complete.
 
 # Design Decisions and Trade-offs
 
-Due to limited implementation time, the following features were not completed:
+Due to time constraints, the following features were not implemented:
 
-- SQLite-based persistent storage
-- Additional C library integration
+- SQLite database storage
+- External C library integration
 
-The original plan was to use Cython to integrate a small C-based parser function for performance optimization.
+The original plan was to implement a C-based parser function and expose it to Python using Cython to improve parsing performance.
 
 ---
 
 # Known Limitations
 
-- The current queue implementation uses a text file (`buffer.txt`) instead of a database.
-- The Cython parser integration is not implemented yet.
-- MQTT authentication is not currently configured.
-- The application is a prototype and requires additional hardening before production deployment.
+Current limitations:
+
+- The local buffer uses a text file instead of a database.
+- The MQTT publishing flow reconnects and flushes messages sequentially.
+- The Cython parser implementation is not included yet.
+- No automated unit test framework is currently included.
+
+Future improvements:
+
+- Replace file-based buffering with SQLite.
+- Add automated tests using `pytest`.
+- Implement C parser integration using Cython.
+- Add telemetry schema version management.
