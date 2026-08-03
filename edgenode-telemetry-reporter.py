@@ -7,7 +7,7 @@ import signal
 import time
 import paho.mqtt.client as mqtt
 
-
+#I would normally expect this value to come from the sensor as part of the telemetry data, so I will hardcode DEVICE_ID here for now.
 DEVICE_ID = "edgenode-test-001"
 # MQTT broker configuration
 MQTT_HOST = "localhost"
@@ -16,7 +16,7 @@ MQTT_PORT = 1883
 TOPIC = f"company/edgenode/{DEVICE_ID}/telemetry"
 # Local buffer (persistent queue) configuration
 BUFFER_FILE = "buffer.txt"
-QUEUE_MAX_SIZE = 10
+QUEUE_MAX_SIZE = 10 # Maximum number of messages stored in the buffer. New messages are rejected when the buffer is full.
 
 # Tracks whether the MQTT client currently has a live connection to the
 # broker. Updated by the on_connect/on_disconnect callbacks, which run
