@@ -16,13 +16,6 @@ Prototype implementation of an embedded Linux telemetry reporter written in Pyth
 ## Project Structure
 
 edgenode-telemetry-reporter/
-- main.py
-- reporter.conf
-- telemetry_input.txt
-- requirements.txt
-- README.md
-- .gitignore
-
 - main.py → Entire application (configuration, parser, queue, MQTT, logging, shutdown).
 - reporter.conf → Configuration values.
 - telemetry_input.txt → Sample input file.

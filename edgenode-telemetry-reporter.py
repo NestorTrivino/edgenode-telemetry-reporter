@@ -45,40 +45,65 @@ def publish_message(client, message):
 
 
 def parse_line(line):
-
+ 
     # This function parses a telemetry input line
     # It separates the sensor values into key-value pairs
     # It validates required fields and converts values to float format
-
+ 
     data = {}
-
+ 
+    # Required telemetry fields
+    required = ["TEMP", "HUM", "VOLT"]
+    known_fields = set(required)
+ 
     try:
         parts = line.split(",")
-
+ 
         # Extract key-value pairs from input data
         for part in parts:
-            key, value = part.split("=")
+            part = part.strip()
+ 
+            # Tolerate stray/empty segments (e.g. trailing commas)
+            if not part:
+                continue
+ 
+            # Reject segments that aren't in key=value format
+            if "=" not in part:
+                raise ValueError(f"Malformed field (expected key=value): '{part}'")
+ 
+            key, value = part.split("=", 1)
+            key = key.strip()
+            value = value.strip()
+ 
+            if not key:
+                raise ValueError(f"Malformed field (missing key): '{part}'")
+ 
+            # Ignore extra/unknown fields instead of failing the whole line
+            if key not in known_fields:
+                print(f"WARNING: Unknown field '{key}' ignored in line: {line}")
+                continue
+ 
             data[key] = value
-
-        # Required telemetry fields
-        required = ["TEMP", "HUM", "VOLT"]
-
+ 
         # Verify all required fields are present
         for field in required:
             if field not in data:
                 raise ValueError(f"Missing field: {field}")
-
-        # Convert sensor values from string to float
-        data["TEMP"] = float(data["TEMP"])
-        data["HUM"] = float(data["HUM"])
-        data["VOLT"] = float(data["VOLT"])
-
+ 
+        # Convert sensor values from string to float, one at a time so
+        # we can report exactly which field has an invalid numeric value
+        for field in required:
+            try:
+                data[field] = float(data[field])
+            except ValueError:
+                raise ValueError(f"Invalid numeric value for {field}: '{data[field]}'")
+ 
         return data
-
+ 
     except Exception as e:
         print(f"ERROR: {line}")
         print(e)
-
+ 
         return None
 
 
