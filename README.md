@@ -16,28 +16,33 @@ Prototype implementation of an embedded Linux telemetry reporter written in Pyth
 ## Project Structure
 
 edgenode-telemetry-reporter/
-│
-├── main.py
-├── reporter.conf
-├── telemetry_input.txt
-├── requirements.txt
-├── README.md
-└── .gitignore
+- main.py
+- reporter.conf
+- telemetry_input.txt
+- requirements.txt
+- README.md
+- .gitignore
 
-main.py → Entire application (configuration, parser, queue, MQTT, logging, shutdown).
-reporter.conf → Configuration values.
-telemetry_input.txt → Sample input file.
-requirements.txt → Python dependencies.
-README.md → Build and usage instructions.
-.gitignore → Ignore generated files.
+- main.py → Entire application (configuration, parser, queue, MQTT, logging, shutdown).
+- reporter.conf → Configuration values.
+- telemetry_input.txt → Sample input file.
+- requirements.txt → Python dependencies.
+- README.md → Build and usage instructions.
+- .gitignore → Ignore generated files.
 ## Requirements
 
-Python 3.11+
+- Python 3.11+
 
-Mosquitto Broker
+- Mosquitto Broker
 
-pip install -r requirements.txt
+- pip install -r requirements.txt
 
 ## Running
-chmod +x edgenode-telemetry-reporter.py
-./edgenode-telemetry-reporter.py
+
+- chmod +x edgenode-telemetry-reporter.py
+
+- ./edgenode-telemetry-reporter.py
+
+## Monitoring MQTT Messages
+To subscribe to all published telemetry messages:
+* mosquitto_sub -h localhost -t "company/edgenode/#" -v
